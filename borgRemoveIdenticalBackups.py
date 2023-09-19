@@ -3,21 +3,25 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import subprocess
 from os.path import isfile
 
 # get list all borg archives in repo
 completedProcess = subprocess.run(["borg", "list", "--json"], stdout=subprocess.PIPE)
 borgListResult = json.loads(completedProcess.stdout)
+repoId = borgListResult["repository"]["id"]
+repoLocation = borgListResult["repository"]["location"]
+indexDir = "indexes/" + repoId + re.sub('[^0-9a-zA-Z]+', '_', repoLocation)
+os.makedirs(indexDir,exist_ok=True)
 archives = borgListResult["archives"]
 archives = sorted(archives, key=lambda d: d["start"])  # chronological
 
 print("create missing archive indexes")
 expectedFilenames = set()
 for archive in archives:
-    archiveId = archive["id"]
     archiveName = archive["name"]
-    filename = archiveId + ".borgArchiveIdx.gz"
+    filename = indexDir + "/" + archive["id"] + ".borgArchiveIdx.gz"
     expectedFilenames.add(filename)
 
     if isfile(filename):
@@ -39,7 +43,7 @@ for archive in archives:
     file.close()
 
 print("delete old archive indexes")
-allFilenames = glob.glob("*.borgArchiveIdx.gz")
+allFilenames = glob.glob(indexDir + "/*.borgArchiveIdx.gz")
 for filename in allFilenames:
     if filename not in expectedFilenames:
         print("delete", filename)
@@ -50,7 +54,7 @@ print("search for duplicate archives")
 known = {}
 toDelete = []
 for archive in archives:
-    filename = archive["id"] + ".borgArchiveIdx.gz"
+    filename = indexDir + "/" + archive["id"] + ".borgArchiveIdx.gz"
     file = gzip.open(filename, "rb")
     sha256 = hashlib.sha256(file.read()).hexdigest()
     file.close()
