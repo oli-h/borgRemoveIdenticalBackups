@@ -9,6 +9,9 @@ from os.path import isfile
 
 # get list all borg archives in repo
 completedProcess = subprocess.run(["borg", "list", "--json"], stdout=subprocess.PIPE)
+if completedProcess.returncode != 0:
+    exit(0)
+
 borgListResult = json.loads(completedProcess.stdout)
 repoId = borgListResult["repository"]["id"]
 repoLocation = borgListResult["repository"]["location"]
@@ -34,6 +37,8 @@ for archive in archives:
             "--format", "{path}\t{type}\t{mode}\t{uid}\t{gid}\t{flags}\t{size}\t{isomtime}\t{isoctime}\t{source}{NL}",
             "::" + archiveName
         ], stdout=subprocess.PIPE, universal_newlines=True)
+    if completedProcess.returncode != 0:
+        exit(0)
     lines = completedProcess.stdout.strip().split("\n")
     lines = sorted(lines)
     lines = "\n".join(lines)
