@@ -36,6 +36,7 @@ for archive in archives:
         [
             "borg", "list",
             "--format", "{path}\t{type}\t{mode}\t{uid}\t{gid}\t{flags}\t{size}\t{isomtime}\t{isoctime}\t{source}{NL}",
+            "--bypass-lock",
             "::" + archiveName
         ], stdout=subprocess.PIPE, universal_newlines=True)
     if completedProcess.returncode != 0:
